@@ -2,7 +2,7 @@ import configparser
 
 section = "KEY"
 option = "api_key"
-value = "6383973511:AAFMJBhyVwdV1PmNSfeT4zlycw3EsHNICTU"
+value = ""
 
 
 def wright(section, option, value):
@@ -11,7 +11,7 @@ def wright(section, option, value):
     path = "api_key.ini"
 
     config.read(path)
-    config.add_section("KEY")
+
     config.set(section, option, value)
 
     with open(path, "w") as f:
