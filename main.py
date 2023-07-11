@@ -1,8 +1,12 @@
+import configparser
+
 import telebot
 
 from src.telegram.events.events import Events
 
-TOKEN = "6383973511:AAFMJBhyVwdV1PmNSfeT4zlycw3EsHNICTU"
+config = configparser.ConfigParser()
+config.read("src/resourses/api_key.ini")
+TOKEN = config.get("KEY", "api_key")
 
 
 # эта функция будет ТОЧНО создавать самого bot и передавать в его в events
