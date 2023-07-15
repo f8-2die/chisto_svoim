@@ -22,6 +22,7 @@ class Processor:
                                   message.from_user) + self.config.get("DEFAULT", "start_message") + "🤓",
                               reply_markup=markup)
 
+    # Метод создаёт кнопки меню
     def create_start_button(self):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton(self.config.get("BUTTON", "eng_test_text") + "📖")
@@ -30,15 +31,18 @@ class Processor:
         markup.add(btn1, btn2, btn3)
         return markup
 
+    # Метод создаёт клаву для прохождения теста и вызывает его запуск
     def assess_eng_level(self, message):
         test = Test(self.bot, Processor(self.bot))
         markup = test.create_answer_button()
         test.offer_take_test(message, markup)
         test.start_test(message)
 
+    # Отправляет контакты на менеджера
     def send_contact(self, message):
         self.bot.send_message(message.chat.id, text=self.config.get("RESPONSE", "contact_response"))
 
+    # Отправляет аник
     def send_anik(self, message):
         self.bot.send_message(message.chat.id,
                               text=self.config.get("RESPONSE", "anik_response"))

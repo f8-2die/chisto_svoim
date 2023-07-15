@@ -1,8 +1,8 @@
 import configparser
 
-section = "DEFAULT"
-option = "main_menu"
-value = "В главное меню"
+section = "RESPONSE"
+option = "eng_test_response"
+value = "Итак, приступим к написанию теста, который поможет понять полный ты дуб или нет :)"
 
 
 def wright(section, option, value):
