@@ -1,14 +1,14 @@
 import configparser
 
-section = "KEY"
-option = "api_key"
-value = ""
+section = "DEFAULT"
+option = "main_menu"
+value = "В главное меню"
 
 
 def wright(section, option, value):
     config = configparser.ConfigParser()
 
-    path = "api_key.ini"
+    path = "properties.ini"
 
     config.read(path)
 

@@ -1,28 +1,44 @@
 """
 Этот модуль будет исполнять команды отдаваемые events
-если events отследил что нужно что-то сохранить в бд
-то он вызовет метод из этого модуля а этот метод уже будет вызывать бд и делать всё что нужно
 """
 import configparser
+from telebot import types  # для указание типов
+
+from src.telegram.processor.assess_eng_level.testing import Test
 
 
 class Processor:
+    # создание экзепляра конфига
     config = configparser.ConfigParser()
     config.read("src/resourses/properties.ini")
 
     def __init__(self, bot):
         self.bot = bot
 
-        # Н
+    # Пишет пользователю приветственное сообщение
+    def say_hello(self, message, markup):
+        self.bot.send_message(message.chat.id,
+                              text="Привет,{0.first_name}!\n".format(
+                                  message.from_user) + self.config.get("DEFAULT", "start_message") + "🤓",
+                              reply_markup=markup)
+
+    def create_start_button(self):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton(self.config.get("BUTTON", "eng_test_text") + "📖")
+        btn2 = types.KeyboardButton(self.config.get("BUTTON", "get_contact") + "😎🤘")
+        btn3 = types.KeyboardButton(self.config.get("BUTTON", "get_anik") + "😂")
+        markup.add(btn1, btn2, btn3)
+        return markup
+
     def assess_eng_level(self, message):
-        tg_bot = self.bot
-        tg_bot.send_message(message.chat.id, text=self.config.get("RESPONSE", "eng_test_response"))
+        test = Test(self.bot, Processor(self.bot))
+        markup = test.create_answer_button()
+        test.offer_take_test(message, markup)
+        test.start_test(message)
 
     def send_contact(self, message):
-        tg_bot = self.bot
-        tg_bot.send_message(message.chat.id, text=self.config.get("RESPONSE", "contact_response"))
+        self.bot.send_message(message.chat.id, text=self.config.get("RESPONSE", "contact_response"))
 
     def send_anik(self, message):
-        tg_bot = self.bot
-        tg_bot.send_message(message.chat.id,
-                            text=self.config.get("RESPONSE", "anik_response"))
+        self.bot.send_message(message.chat.id,
+                              text=self.config.get("RESPONSE", "anik_response"))
