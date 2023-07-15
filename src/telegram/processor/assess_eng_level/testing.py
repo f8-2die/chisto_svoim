@@ -68,6 +68,8 @@ class Test:
 
     # Оповещает пользователя о результатах теста
     # todo дописать сюда функцию, которая будет вызывать метод из Processora, который запишет юзера прошедшего тест в БД
+    # todo А ещё лучше переписать этот метод в модуль logic, чтобы в будущем, если захотим изменить систему оценки,
+    #  то чтобы всё лежало на своих местах
     def test_result(self, chat_id):
         if 3 > self.correct_answer >= 0:
             self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
