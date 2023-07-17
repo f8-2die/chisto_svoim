@@ -1,14 +1,14 @@
 import configparser
 
-section = "RESPONSE"
-option = "eng_test_response"
-value = "Итак, приступим к написанию теста, который поможет понять полный ты дуб или нет :)"
+section = "DEFAULT"
+option = "db_name"
+value = "chisto_svoim_bd"
 
 
 def wright(section, option, value):
     config = configparser.ConfigParser()
 
-    path = "properties.ini"
+    path = "storage_config.ini"
 
     config.read(path)
 

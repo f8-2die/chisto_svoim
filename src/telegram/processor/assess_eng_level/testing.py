@@ -1,6 +1,8 @@
 import configparser
 from telebot import types
 
+from src.logic.eng.estimation.estimation import Test_estimation
+
 """
     Класс отвечает за проведение теста пользователя.
     Он умеет задавать вопросы, запоминать ответы на эти вопросы
@@ -14,6 +16,7 @@ class Test:
     answers = []  # Список с ответами пользователя
 
     def __init__(self, bot, processor):
+
         self.bot = bot
         self.processor = processor
 
@@ -29,11 +32,10 @@ class Test:
                               reply_markup=markup)
 
     # Старт теста
-    def start_test(self, message):
+    def start_test(self):
         self.answers = []
         self.current_question = 0
         self.correct_answer = 0
-        self.send_question(message)
 
     """
         Проверяет, есть ли запрос на выход из теста 
@@ -52,37 +54,33 @@ class Test:
                                         text=self.test_config.get("QUESTION", "question_" + str(self.current_question)))
             self.bot.register_next_step_handler(msg, self.save_answer)
         else:
-            self.check_answers()
-            self.test_result(message.chat.id)  # Сохраняет каждый ответ в список и вызывает функцию нового вопроса
+            test_estimation = Test_estimation(
+                self.answers)  # создаёт класс, который будет оценивать результаты и их передаёт
+            test_estimation.check_answers()  # подсчитывает количество верных ответов
+            self.correct_answer = test_estimation.correct_answer
+            level = test_estimation.result_processing()  # выдаёт результат
+            self.send_results_to_user(message.chat.id, level)
 
     # Сохраняет каждый ответ в список и вызывает функцию нового вопроса
     def save_answer(self, message):
         self.answers.append(message.text)
         self.send_question(message)
 
-    # Устанавливает число верных ответов
-    def check_answers(self):
-        for i in range(len(self.answers)):
-            if self.answers[i] == self.test_config.get("ANSWERS", "answer_" + str(i + 1)):
-                self.correct_answer += 1
-
     # Оповещает пользователя о результатах теста
-    # todo дописать сюда функцию, которая будет вызывать метод из Processora, который запишет юзера прошедшего тест в БД
-    # todo А ещё лучше переписать этот метод в модуль logic, чтобы в будущем, если захотим изменить систему оценки,
-    #  то чтобы всё лежало на своих местах
-    def test_result(self, chat_id):
-        if 3 > self.correct_answer >= 0:
+    def send_results_to_user(self, chat_id, level):
+        if level == "low_level":
             self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
                 self.correct_answer) + " " + self.test_config.get("RESULT", "test_result_after") + self.test_config.get(
                 "RESULT", "lox"))
-        elif 5 > self.correct_answer >= 3:
+        elif level == "medium_level":
             self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
                 self.correct_answer) + " " + self.test_config.get("RESULT", "test_result_after") + self.test_config.get(
                 "RESULT", "norm_lvl"))
-        elif self.correct_answer >= 5:
+        elif level == "height_level":
             self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
                 self.correct_answer) + " " + self.test_config.get("RESULT", "test_result_after") + self.test_config.get(
                 "RESULT", "god"))
+            # todo прописать ошибку в else
 
     # Создаёт кнопки ответа на тест
     def create_answer_button(self):
