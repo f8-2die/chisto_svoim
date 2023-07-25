@@ -1,17 +1,16 @@
 import configparser
 
-section = "DEFAULT"
-option = "db_name"
-value = "chisto_svoim_bd"
+section = "MESSAGE_TO_TEACHER"
+option = "complete_test"
+value = " только что прошёл тест со следующими ошибками: "
 
 
 def wright(section, option, value):
     config = configparser.ConfigParser()
 
-    path = "storage_config.ini"
+    path = "test.ini"
 
     config.read(path)
-
     config.set(section, option, value)
 
     with open(path, "w") as f:

@@ -2,6 +2,7 @@ import configparser
 from telebot import types
 
 from src.logic.eng.estimation.estimation import Test_estimation
+from src.telegram.processor.processor import Processor
 
 """
     Класс отвечает за проведение теста пользователя.
@@ -10,15 +11,20 @@ from src.logic.eng.estimation.estimation import Test_estimation
 """
 
 
-class Test:
+class Test(Processor):
     current_question = 0  # Номер текущего вопроса
     correct_answer = 0  # Количество правильных ответов
     answers = []  # Список с ответами пользователя
+    incorrect_answers = {}
+    end_test = False
 
-    def __init__(self, bot, processor):
-
+    def __init__(self, bot, storage):
         self.bot = bot
-        self.processor = processor
+        self.storage = storage
+        super().__init__(self.bot, self.storage)
+
+    def __set__(self):
+        self.incorrect_answers()
 
     config = configparser.ConfigParser()
     config.read("src/resourses/properties.ini")
@@ -47,6 +53,7 @@ class Test:
     def send_question(self, message):
         if message.text == self.config.get("DEFAULT", "main_menu") + "➡️":
             self.take_main_menu(message)
+            self.end_test = True
             return
         self.current_question += 1
         if self.current_question < int(self.test_config.get("DEFAULT", "questions_score")):
@@ -54,12 +61,24 @@ class Test:
                                         text=self.test_config.get("QUESTION", "question_" + str(self.current_question)))
             self.bot.register_next_step_handler(msg, self.save_answer)
         else:
-            test_estimation = Test_estimation(
-                self.answers)  # создаёт класс, который будет оценивать результаты и их передаёт
-            test_estimation.check_answers()  # подсчитывает количество верных ответов
-            self.correct_answer = test_estimation.correct_answer
-            level = test_estimation.result_processing()  # выдаёт результат
-            self.send_results_to_user(message.chat.id, level)
+            self.result_processing(message)
+
+    '''
+    Вызывает класс, который обработает результат
+    Затем вызывает методы этого класса
+    Отсылает юзеру результаты 
+    Выходит в главное меню
+    '''
+
+    def result_processing(self, message):
+        test_estimation = Test_estimation(
+            self.answers)  # создаёт класс, который будет оценивать результаты и их передаёт
+        test_estimation.check_answers()  # подсчитывает количество верных ответов
+        self.correct_answer = test_estimation.correct_answer
+        self.incorrect_answers = test_estimation.incorrect_answers
+        level = test_estimation.result_processing()  # выдаёт результат
+        self.send_results_to_user(message.chat.id, level)
+        self.take_main_menu(message)
 
     # Сохраняет каждый ответ в список и вызывает функцию нового вопроса
     def save_answer(self, message):
@@ -95,5 +114,17 @@ class Test:
 
     # Функция которая создаёт кнопки главног меню
     def take_main_menu(self, message):
-        markup = self.processor.create_start_button()
+        markup = self.create_start_button()
         self.bot.send_message(message.chat.id, self.config.get("DEFAULT", "main_menu") + "➡️", reply_markup=markup)
+
+    """
+    Вызывает методы, которые сначала задают вопросы юзеру
+    А затем оценивают результат теста
+    Затем же озвучивают результат теста
+    """
+
+    def assess_eng_level(self, message):
+        markup = self.create_answer_button()
+        self.offer_take_test(message, markup)  # пишет юзеру что тест начался
+        self.start_test()  # запускает тест
+        self.send_question(message)  # задаёт первый вопрос
