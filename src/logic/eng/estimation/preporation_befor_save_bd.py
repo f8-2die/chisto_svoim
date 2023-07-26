@@ -30,6 +30,7 @@ class Preparation_before_save_bd:
     def result_processing_if_test_is_over(self):
         if self.test_is_over is True:
             return
+        # todo разобратся с числом вопросов в конфиге, их там 7 а не 6
         if (len(self.test.answers) + 1) == int(self.test.test_config.get("DEFAULT", "questions_score")):
             return
         self.test.result_processing(self.message)
@@ -38,6 +39,7 @@ class Preparation_before_save_bd:
     def save_new_user(self):
         if self.test_is_over is True:
             return
+        print(self.user)
         self.eng_storage.save_new_user(self.user)
 
     # Запускает метод и закрывает его по истечению таймера
@@ -70,13 +72,21 @@ class Preparation_before_save_bd:
 
         for i in self.user["test_result"]:
             incorrect_answer += "\n" + i + "\n"
-
         for teacher in self.teachers:
             chat = self.test.bot.get_chat(teacher[2])
-            self.test.bot.send_message(chat.id,
-                                       "Привет ," + teacher[1] +
-                                       self.test.test_config.get("MESSAGE_TO_TEACHER", "user") + str(
-                                           self.user["username"]) + " " +
-                                       self.test.test_config.get("MESSAGE_TO_TEACHER",
-                                                                 "complete_test") + incorrect_answer
-                                       )
+            if self.user["test_result"] == {}:
+                self.test.bot.send_message(chat.id,
+                                           "Привет ," + teacher[1] +
+                                           self.test.test_config.get("MESSAGE_TO_TEACHER", "user") + str(
+                                               self.user["username"]) + " " +
+                                           self.test.test_config.get("MESSAGE_TO_TEACHER",
+                                                                     "complete_test_null_errors")
+                                           )
+            else:
+                self.test.bot.send_message(chat.id,
+                                           "Привет ," + teacher[1] +
+                                           self.test.test_config.get("MESSAGE_TO_TEACHER", "user") + str(
+                                               self.user["username"]) + " " +
+                                           self.test.test_config.get("MESSAGE_TO_TEACHER",
+                                                                     "complete_test") + incorrect_answer
+                                           )

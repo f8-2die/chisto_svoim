@@ -76,7 +76,7 @@ class Events:
 
         # Ждёт запроса на аник от пользователя и отправляет его, если запрос есть
         @self.bot.message_handler(
-            func=lambda message: message.text == (config.get("BUTTON", "get_anik") + "😂"))
+            func=lambda message: message.text == (config.get("BUTTON", "get_anik") + "🥵🥵🥵"))
         def anik_button_listener(message):
             self.processor.send_anik(message)
 

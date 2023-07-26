@@ -2,6 +2,7 @@
 Этот модуль будет исполнять команды отдаваемые events
 """
 import configparser
+from random import randint
 
 from telebot import types  # для указание типов
 
@@ -27,7 +28,7 @@ class Processor:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton(self.config.get("BUTTON", "eng_test_text") + "📖")
         btn2 = types.KeyboardButton(self.config.get("BUTTON", "get_contact") + "😎🤘")
-        btn3 = types.KeyboardButton(self.config.get("BUTTON", "get_anik") + "😂")
+        btn3 = types.KeyboardButton(self.config.get("BUTTON", "get_anik") + "🥵🥵🥵")
         markup.add(btn1, btn2, btn3)
         return markup
 
@@ -37,5 +38,8 @@ class Processor:
 
     # Отправляет аник
     def send_anik(self, message):
+        anik_config = configparser.ConfigParser()
+        anik_config.read("src/resourses/aniki.ini")
+        anik_number = randint(1, int(anik_config.get("DEFAULT", "anil_count")))
         self.bot.send_message(message.chat.id,
-                              text=self.config.get("RESPONSE", "anik_response"))
+                              text=anik_config.get("ANIKI", "anik_" + str(anik_number)))

@@ -1,8 +1,8 @@
 import configparser
 
 section = "MESSAGE_TO_TEACHER"
-option = "complete_test"
-value = " только что прошёл тест со следующими ошибками: "
+option = "complete_test_null_errors"
+value = ' прошёл тест без ошибок! Скорее пиши этому гению ;)'
 
 
 def wright(section, option, value):
