@@ -21,7 +21,7 @@ class Eng_storage:
                                                                                     user["correct_answer"]))
                 self.connect.commit()
         except Failed_save_user as e:
-            print(self.config.get("Database_errors", "failed_save_user"))
+            print(self.config.get("Database_errors", "failed_save_user") + str(e))
 
     def get_teachers_id(self):
         try:
@@ -31,4 +31,4 @@ class Eng_storage:
                 teachers = cursor.fetchall()
                 return teachers
         except Failed_get_teachers as e:
-            print(self.config.get("Database_errors", "failed get teachers id"))
+            print(self.config.get("Database_errors", "failed_get_teachers_id") + str(e))

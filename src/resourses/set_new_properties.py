@@ -1,14 +1,14 @@
 import configparser
 
-section = "MESSAGE_TO_TEACHER"
-option = "complete_test_null_errors"
-value = ' прошёл тест без ошибок! Скорее пиши этому гению ;)'
+section = "Database_errors"
+option = "failed_open_db_connect"
+value = 'Не удалось открыть соединение с БД: '
 
 
 def wright(section, option, value):
     config = configparser.ConfigParser()
 
-    path = "test.ini"
+    path = "errors_text.ini"
 
     config.read(path)
     config.set(section, option, value)
