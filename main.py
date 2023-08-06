@@ -1,4 +1,5 @@
 import configparser
+import logging
 
 import telebot
 
@@ -12,11 +13,13 @@ TOKEN = config.get("KEY", "api_key")  # api бота, которое храни�
 
 
 def main():
-    storage = Storage()
+    logging.basicConfig(level=logging.ERROR, filename="logs.log", filemode="w", encoding='utf-8')
+    loger = logging.getLogger("loger")
+    storage = Storage(loger)
     storage.open_connect()
     bot = telebot.TeleBot(TOKEN)  # Создаю экземпляр бота
-    processor = Processor(bot, storage)
-    events = Events(bot, processor)  # Создаю экземпляр events-ов для взаимодействия с api-телеграма
+    processor = Processor(bot, storage, loger)
+    events = Events(bot, processor, loger)  # Создаю экземпляр events-ов для взаимодействия с api-телеграма
     events.start_listener()  # Запускаю "слушатель", который ходит на сервер и проверяет наличие ивентов
 
 

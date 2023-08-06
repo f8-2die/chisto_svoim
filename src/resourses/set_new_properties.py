@@ -1,16 +1,22 @@
 import configparser
 
-section = "Database_errors"
-option = "failed_open_db_connect"
-value = 'Не удалось открыть соединение с БД: '
+section = "DEFAULT"
+option = "test_already_is_over"
+value = 'Тест уже был пройден! Если же менеджер так и не написал, скорее всего у тебя скрыт никнейм, пожалуйста, напиши нам сам ;)'
+
+
+# programming = Программирование
+# eng = Английский
+# get_contact = Наши контакты
 
 
 def wright(section, option, value):
     config = configparser.ConfigParser()
 
-    path = "errors_text.ini"
+    path = "test.ini"
 
     config.read(path)
+
     config.set(section, option, value)
 
     with open(path, "w") as f:

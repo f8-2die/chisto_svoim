@@ -2,8 +2,10 @@ import configparser
 from telebot import types
 
 from src.errors.errors import Failed_send_offer_take_test, Failed_send_question_eng_test, Failed_process_test_result, \
-    Failed_send_test_result_to_user, Failed_create_test_button, Failed_create_main_menu_buttons, Failed_execution_test
+    Failed_send_test_result_to_user, Failed_create_test_button, Failed_create_main_menu_buttons, Failed_execution_test, \
+    Failed_get_teachers, Failed_send_message_to_teacher
 from src.logic.eng.estimation.estimation import Test_estimation
+from src.storage.eng.eng_storage import Eng_storage
 from src.telegram.processor.processor import Processor
 
 """
@@ -14,19 +16,9 @@ from src.telegram.processor.processor import Processor
 
 
 class Test(Processor):
-    current_question = 0  # Номер текущего вопроса
-    correct_answer = 0  # Количество правильных ответов
-    answers = []  # Список с ответами пользователя
-    incorrect_answers = {}  # Словарь с номером неверного вопроса и с текстом этого вопроса
-    end_test = False  # Если пользователь вышел из теста, не завершив его, то становится True
-
-    def __init__(self, bot, storage):
+    def __init__(self, bot, storage, loger):
         self.bot = bot
-        self.storage = storage
-        super().__init__(self.bot, self.storage)
-
-    def __set__(self):
-        self.incorrect_answers()
+        super().__init__(self.bot, storage, loger)
 
     config = configparser.ConfigParser()
     config.read("src/resourses/properties.ini")
@@ -45,81 +37,101 @@ class Test(Processor):
         except Failed_send_offer_take_test as e:
             print(self.errors_config.get("Assess_eng_lvl", "failed_send_offer_take_test") + str(e))
 
-    # Старт теста
-    def start_test(self):
-        self.answers = []
-        self.current_question = 0
-        self.correct_answer = 0
-
-    """
-        Проверяет, есть ли запрос на выход из теста 
-        Затем, если число отправленных вопросов меньше количества вопросов,то отправляет вопрос 
-        Если число отправленных вопросов и общее их число равно, то вызывает функцию проверки результата и функцию 
-        оповещения о результате пользователя.
-    """
-
-    def send_question(self, message):
+    # Отправляет вопрос пользователю
+    def send_question(self, message, question, markup):
         try:
-            if message.text == self.config.get("DEFAULT", "main_menu") + "➡️":
-                self.take_main_menu(message)
-                self.end_test = True
-                return
-            self.current_question += 1
-            if self.current_question < int(self.test_config.get("DEFAULT", "questions_score")):
-                msg = self.bot.send_message(message.chat.id,
-                                            text=self.test_config.get("QUESTION",
-                                                                      "question_" + str(self.current_question)))
-                self.bot.register_next_step_handler(msg, self.save_answer)
-            else:
-                self.result_processing(message)
-        except Failed_send_question_eng_test as e:
-            print(self.errors_config.get("Assess_eng_lvl", "failed_send_question_eng_test") + str(e))
+            self.bot.send_message(message.chat.id, self.test_config.get("QUESTION", "question_" + question),
+                                  reply_markup=markup)
+        except Exception as e:
+            print(e)
 
-    '''
-    Вызывает класс, который обработает результат
-    Затем вызывает методы этого класса
-    Отсылает юзеру результаты 
-    Выходит в главное меню
-    '''
+    # Отправляет уведомление о том, что тест уже пройден
+    def send_notification_test_already_completion(self, message, markup):
+        self.bot.send_message(message.chat.id, self.test_config.get("DEFAULT", "test_already_is_over"),
+                              reply_markup=markup)
+        self.bot.send_message(message.chat.id, self.config.get("RESPONSE", "contact_response"), parse_mode="Markdown",
+                              reply_markup=markup)
 
-    def result_processing(self, message):
-        try:
-            test_estimation = Test_estimation(
-                self.answers)  # создаёт класс, который будет оценивать результаты и их передаёт
-            test_estimation.check_answers()  # подсчитывает количество верных ответов
-            self.correct_answer = test_estimation.correct_answer
-            self.incorrect_answers = test_estimation.incorrect_answers
-            level = test_estimation.result_processing()  # выдаёт результат
-            self.send_results_to_user(message.chat.id, level)
-            self.take_main_menu(message)
-        except Failed_process_test_result as e:
-            print(self.errors_config.get("Assess_eng_lvl", "failed_process_test_result") + str(e))
-
-    # Сохраняет каждый ответ в список и вызывает функцию нового вопроса
-    def save_answer(self, message):
-        self.answers.append(message.text)
-        self.send_question(message)
-
-    # Оповещает пользователя о результатах теста
-    def send_results_to_user(self, chat_id, level):
+    def send_notification_test_completion(self, chat_id, correct_answer, level):
         try:
             if level == "low_level":
                 self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
-                    self.correct_answer) + " " + self.test_config.get("RESULT",
-                                                                      "test_result_after") + self.test_config.get(
+                    correct_answer) + " " + self.test_config.get("RESULT",
+                                                                 "test_result_after") + self.test_config.get(
                     "RESULT", "lox"))
+                self.bot.send_message(chat_id, self.config.get("RESPONSE", "contact_response"),
+                                      parse_mode="Markdown")
             elif level == "medium_level":
                 self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
-                    self.correct_answer) + " " + self.test_config.get("RESULT",
-                                                                      "test_result_after") + self.test_config.get(
+                    correct_answer) + " " + self.test_config.get("RESULT",
+                                                                 "test_result_after") + self.test_config.get(
                     "RESULT", "norm_lvl"))
+                self.bot.send_message(chat_id, self.config.get("RESPONSE", "contact_response"),
+                                      parse_mode="Markdown")
             elif level == "height_level":
                 self.bot.send_message(chat_id, text=self.test_config.get("RESULT", "test_result_before") + " " + str(
-                    self.correct_answer) + " " + self.test_config.get("RESULT",
-                                                                      "test_result_after") + self.test_config.get(
+                    correct_answer) + " " + self.test_config.get("RESULT",
+                                                                 "test_result_after") + self.test_config.get(
                     "RESULT", "god"))
+                self.bot.send_message(chat_id, self.config.get("RESPONSE", "contact_response"),
+                                      parse_mode="Markdown")
         except Failed_send_test_result_to_user as e:
             print(self.errors_config.get("Assess_eng_lvl", "failed_send_test_result_to_user") + str(e))
+
+    # Проверяет ответ пользователя
+    def checking_answer(self, message, answer):
+        user = self.eng_storage.get_user_by_chat_id(message.chat.id)
+        if user:
+            current_question = user[0][4]
+            if answer == self.test_config.get("ANSWERS", "answer_" + str(current_question)):
+                self.eng_storage.add_correct_answer(message.chat.id)
+            else:
+                mistake = self.eng_storage.get_user_mistake(message.chat.id)[0][0]
+                mistake += "\n" + "\n" + "\n" + self.test_config.get("QUESTION", "question_" + str(current_question))
+                self.eng_storage.add_test_mistake_to_user(message.chat.id, mistake)
+            return current_question
+
+    # Вызывает метод из бд со всеми преподователями
+    def get_all_teacher(self):
+        try:
+            teachers = self.eng_storage.get_teachers_id()
+        except Failed_get_teachers as e:
+            print(self.errors_config.get("Database_errors", "failed_get_teachers_id") + str(e))
+
+    # Определяет уроверь юзера
+    def result_processing(self, correct_answer):
+        if 3 > correct_answer >= 0:
+            return "low_level"
+        elif 5 > correct_answer >= 3:
+            return "medium_level"
+        elif correct_answer >= 5:
+            return "height_level"
+
+    # Отправляет преподам сообщение о завершении теста
+    def send_message_teachers(self, chat_id, teachers, username):
+        try:
+
+            incorrect_answer = self.eng_storage.get_user_mistake(chat_id)[0][0]
+            print(incorrect_answer)
+
+            for teacher in teachers:
+                chat = self.bot.get_chat(teacher[2])
+                if incorrect_answer == "":
+                    self.bot.send_message(chat.id,
+                                          "Привет ," + teacher[1] +
+                                          self.test_config.get("MESSAGE_TO_TEACHER", "user") + username + " " +
+                                          self.test_config.get("MESSAGE_TO_TEACHER",
+                                                               "complete_test_null_errors")
+                                          )
+                else:
+                    self.bot.send_message(chat.id,
+                                          "Привет ," + teacher[1] +
+                                          self.test_config.get("MESSAGE_TO_TEACHER", "user") + username + " " +
+                                          self.test_config.get("MESSAGE_TO_TEACHER",
+                                                               "complete_test") + incorrect_answer
+                                          )
+        except Failed_send_message_to_teacher as e:
+            print(self.errors_config.get("Assess_eng_lvl", "failed_send_message_to_teacher") + str(e))
 
     # Создаёт кнопки ответа на тест
     def create_answer_button(self):
@@ -142,18 +154,3 @@ class Test(Processor):
             self.bot.send_message(message.chat.id, self.config.get("DEFAULT", "main_menu") + "➡️", reply_markup=markup)
         except Failed_create_main_menu_buttons as e:
             print(self.errors_config.get("Events_errors", "failed_take_main_menu") + str(e))
-
-    """
-    Вызывает методы, которые сначала задают вопросы юзеру
-    А затем оценивают результат теста
-    Затем же озвучивают результат теста
-    """
-
-    def assess_eng_level(self, message):
-        try:
-            markup = self.create_answer_button()
-            self.offer_take_test(message, markup)  # пишет юзеру что тест начался
-            self.start_test()  # запускает тест
-            self.send_question(message)  # задаёт первый вопрос
-        except Failed_execution_test as e:
-            print(self.errors_config.get("Events_errors", "failed_execute_test") + str(e))
